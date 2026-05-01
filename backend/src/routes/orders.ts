@@ -4,7 +4,7 @@ import { prisma } from "../db/postgres.js";
 
 export const ordersRouter = Router();
 
-ordersRouter.get("/mine", requireAuth, async (req, res) => {
+ordersRouter.get("/mine", requireAuth, requireRole("BUYER", "ADMIN"), async (req, res) => {
   const user = await prisma.user.findUnique({ where: { clerkId: req.marketplaceAuth!.clerkId } });
   if (!user) return res.json([]);
   const orders = await prisma.order.findMany({

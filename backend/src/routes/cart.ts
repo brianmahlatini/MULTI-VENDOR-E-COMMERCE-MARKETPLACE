@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { prisma } from "../db/postgres.js";
 import { Product } from "../models/Product.js";
 
 export const cartRouter = Router();
 
-cartRouter.use(requireAuth);
+cartRouter.use(requireAuth, requireRole("BUYER", "ADMIN"));
 
 async function getOrCreateCart(clerkId: string, email?: string, name?: string) {
   const user = await prisma.user.upsert({

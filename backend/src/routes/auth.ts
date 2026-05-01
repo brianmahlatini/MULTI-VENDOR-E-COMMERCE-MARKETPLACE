@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { clerkClient } from "@clerk/express";
 import { z } from "zod";
+import { prisma } from "../db/postgres.js";
 import { normalizeRole, requireAuth } from "../middleware/auth.js";
 
 export const authRouter = Router();
@@ -22,7 +23,13 @@ authRouter.post("/role", requireAuth, async (req, res) => {
   const assignedRole = req.marketplaceAuth!.assignedRole;
 
   if (body.role === "ADMIN" && (!email || !adminEmails.has(email))) {
-    return res.status(403).json({ message: "Only allow-listed admin emails can become ADMIN" });
+    return res.status(403).json({ message: "Only the approved admin email can use ADMIN access" });
+  }
+
+  if (req.marketplaceAuth!.role === "ADMIN" && body.role !== "ADMIN") {
+    return res.status(409).json({
+      message: "This approved admin email belongs to the admin account. Sign out and use a different account for buyer or seller access."
+    });
   }
 
   if (assignedRole && assignedRole !== body.role) {
@@ -31,20 +38,32 @@ authRouter.post("/role", requireAuth, async (req, res) => {
     });
   }
 
-  if (!assignedRole && req.marketplaceAuth!.role === "ADMIN" && body.role !== "ADMIN") {
-    return res.status(409).json({
-      message: "This approved admin email belongs to the admin account. Sign out and use a different account for buyer or seller access."
-    });
-  }
-
   const user = await clerkClient.users.updateUserMetadata(req.marketplaceAuth!.clerkId, {
     publicMetadata: { role: body.role }
+  });
+
+  const nextRole = normalizeRole(user.publicMetadata.role, user.emailAddresses[0]?.emailAddress);
+
+  await prisma.user.upsert({
+    where: { clerkId: user.id },
+    update: {
+      email: user.emailAddresses[0]?.emailAddress ?? `${user.id}@clerk.local`,
+      name: user.fullName ?? undefined,
+      role: nextRole
+    },
+    create: {
+      clerkId: user.id,
+      email: user.emailAddresses[0]?.emailAddress ?? `${user.id}@clerk.local`,
+      name: user.fullName ?? undefined,
+      role: nextRole
+    }
   });
 
   res.json({
     clerkId: user.id,
     email: user.emailAddresses[0]?.emailAddress,
     name: user.fullName ?? undefined,
-    role: normalizeRole(user.publicMetadata.role, user.emailAddresses[0]?.emailAddress)
+    role: nextRole,
+    assignedRole: nextRole
   });
 });

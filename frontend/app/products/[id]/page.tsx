@@ -30,7 +30,7 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
           <div className="mt-3 space-y-3">
             {product.reviews.length === 0 ? <p className="text-slate-600">No reviews yet.</p> : product.reviews.map((review, index) => (
               <article key={index} className="rounded-lg border border-line bg-white p-4">
-                <p className="font-semibold">{review.buyerName} · {review.rating}/5</p>
+                <p className="font-semibold">{review.buyerName} - {review.rating}/5</p>
                 <p className="mt-1 text-slate-700">{review.comment}</p>
               </article>
             ))}

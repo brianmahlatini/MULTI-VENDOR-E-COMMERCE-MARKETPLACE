@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { checkoutLimiter } from "../middleware/rateLimit.js";
 import { prisma } from "../db/postgres.js";
 import { stripe } from "../services/stripe.js";
@@ -7,7 +7,7 @@ import { env } from "../config/env.js";
 
 export const checkoutRouter = Router();
 
-checkoutRouter.post("/", requireAuth, checkoutLimiter, async (req, res) => {
+checkoutRouter.post("/", requireAuth, requireRole("BUYER", "ADMIN"), checkoutLimiter, async (req, res) => {
   const user = await prisma.user.findUnique({ where: { clerkId: req.marketplaceAuth!.clerkId } });
   if (!user) return res.status(404).json({ message: "Buyer profile not found" });
 

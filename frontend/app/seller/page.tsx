@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { BarChart3, Boxes, DollarSign, PackageCheck } from "lucide-react";
-import { AccessChooser } from "@/components/AccessChooser";
 import { SellerProductForm } from "@/components/SellerProductForm";
 import { apiRequest } from "@/lib/api";
 
@@ -15,16 +15,13 @@ type Me = { role: "BUYER" | "SELLER" | "ADMIN"; email?: string; name?: string };
 
 export default async function SellerPage() {
   const { userId } = await auth();
-  if (!userId) return <main className="mx-auto max-w-5xl px-4 py-10">Sign in as a seller to manage products.</main>;
+  if (!userId) {
+    redirect("/access?role=SELLER");
+  }
 
   const me = await apiRequest<Me>("/auth/me");
   if (!me.data || !["SELLER", "ADMIN"].includes(me.data.role)) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-5 text-2xl font-bold">Seller Access</h1>
-        <AccessChooser currentRole={me.data?.role} />
-      </main>
-    );
+    redirect("/access?role=SELLER");
   }
 
   const dashboard = await apiRequest<SellerDashboard>("/seller/dashboard");

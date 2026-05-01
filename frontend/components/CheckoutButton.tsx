@@ -3,13 +3,20 @@
 import { CreditCard } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { CLIENT_API_URL } from "@/lib/clientApi";
 
 export function CheckoutButton() {
   const [loading, setLoading] = useState(false);
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+  const router = useRouter();
 
   async function checkout() {
+    if (!isSignedIn) {
+      router.push("/access?role=BUYER");
+      return;
+    }
+
     setLoading(true);
     const token = await getToken();
     const response = await fetch(`${CLIENT_API_URL}/checkout`, {

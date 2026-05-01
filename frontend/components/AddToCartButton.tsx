@@ -3,14 +3,21 @@
 import { ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { CLIENT_API_URL } from "@/lib/clientApi";
 
 export function AddToCartButton({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+  const router = useRouter();
 
   async function addToCart() {
+    if (!isSignedIn) {
+      router.push("/access?role=BUYER");
+      return;
+    }
+
     setLoading(true);
     const token = await getToken();
     const response = await fetch(`${CLIENT_API_URL}/cart/items`, {

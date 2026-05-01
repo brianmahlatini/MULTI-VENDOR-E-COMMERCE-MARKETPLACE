@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { apiFetch } from "@/lib/api";
 
@@ -11,7 +12,7 @@ type Cart = {
 
 export default async function CartPage() {
   const { userId } = await auth();
-  if (!userId) return <main className="mx-auto max-w-4xl px-4 py-10">Sign in to view your cart.</main>;
+  if (!userId) redirect("/access?role=BUYER");
 
   const cart = await apiFetch<Cart>("/cart");
   const total = cart.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);

@@ -15,6 +15,32 @@ The main user flows are:
 - Sellers can choose seller access, create products, manage inventory, view product metrics, and review seller sales data.
 - Admins use the approved admin account to access platform-wide metrics, users, products, orders, and audit activity.
 
+## Screenshots
+
+### Storefront
+
+![MarketHub storefront](docs/screenshots/home.png)
+
+### Product Detail
+
+![MarketHub product detail page](docs/screenshots/product-detail.png)
+
+### Cart Sign-In State
+
+![MarketHub cart sign-in state](docs/screenshots/cart-sign-in.png)
+
+### Seller Sign-In State
+
+![MarketHub seller sign-in state](docs/screenshots/seller-sign-in.png)
+
+### Admin Sign-In State
+
+![MarketHub admin sign-in state](docs/screenshots/admin-sign-in.png)
+
+### Access And Clerk Sign-Up
+
+![MarketHub access and Clerk sign-up page](docs/screenshots/access.png)
+
 ## Tech Stack
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, Clerk, Lucide icons

@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id               String   @id @default(cuid())
+  clerkId          String   @unique
+  email            String   @unique
+  name             String?
+  role             Role     @default(BUYER)
+  stripeCustomerId String?
+  stripeAccountId  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  carts            Cart[]
+  orders           Order[]
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  buyerId   String
+  buyer     User       @relation(fields: [buyerId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  sellerId  String
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+  title     String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id              String       @id @default(cuid())
+  buyerId         String
+  buyer           User         @relation(fields: [buyerId], references: [id])
+  status          OrderStatus  @default(PENDING)
+  total           Decimal      @db.Decimal(10, 2)
+  stripeSessionId String?      @unique
+  items           OrderItem[]
+  payments        Payment[]
+  logs            AuditLog[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  sellerId  String
+  title     String
+  imageUrl  String?
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  orderId               String
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId String?
+  status                PaymentStatus @default(PENDING)
+  amount                Decimal       @db.Decimal(10, 2)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model SellerSubscription {
+  id                   String   @id @default(cuid())
+  sellerClerkId         String   @unique
+  stripeSubscriptionId  String   @unique
+  stripeCustomerId      String
+  active               Boolean  @default(false)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  actorId   String?
+  event     String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

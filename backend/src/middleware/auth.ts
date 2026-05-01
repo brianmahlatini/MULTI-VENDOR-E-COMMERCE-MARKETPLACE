@@ -11,6 +11,7 @@ declare global {
         email?: string;
         name?: string;
         role: AuthRole;
+        assignedRole?: AuthRole;
       };
     }
   }
@@ -25,16 +26,22 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     const user = await clerkClient.users.getUser(auth.userId);
     const email = user.emailAddresses[0]?.emailAddress;
+    const assignedRole = parseRole(user.publicMetadata.role);
     req.marketplaceAuth = {
       clerkId: user.id,
       email,
       name: user.fullName ?? undefined,
-      role: normalizeRole(user.publicMetadata.role, email)
+      role: normalizeRole(assignedRole, email),
+      assignedRole
     };
     next();
   } catch (error) {
     next(error);
   }
+}
+
+export function parseRole(role: unknown): AuthRole | undefined {
+  return role === "ADMIN" || role === "SELLER" || role === "BUYER" ? role : undefined;
 }
 
 export function normalizeRole(role: unknown, email?: string): AuthRole {

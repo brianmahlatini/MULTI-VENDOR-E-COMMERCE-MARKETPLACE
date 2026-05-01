@@ -19,14 +19,22 @@ authRouter.get("/me", requireAuth, async (req, res) => {
 authRouter.post("/role", requireAuth, async (req, res) => {
   const body = z.object({ role: z.enum(["BUYER", "SELLER", "ADMIN"]) }).parse(req.body);
   const email = req.marketplaceAuth?.email?.toLowerCase();
-  const currentRole = req.marketplaceAuth!.role;
-
-  if (currentRole === "ADMIN" && body.role !== "ADMIN") {
-    return res.json(req.marketplaceAuth);
-  }
+  const assignedRole = req.marketplaceAuth!.assignedRole;
 
   if (body.role === "ADMIN" && (!email || !adminEmails.has(email))) {
     return res.status(403).json({ message: "Only allow-listed admin emails can become ADMIN" });
+  }
+
+  if (assignedRole && assignedRole !== body.role) {
+    return res.status(409).json({
+      message: `This account is already a ${assignedRole} account. Sign out and use a different account for ${body.role}.`
+    });
+  }
+
+  if (!assignedRole && req.marketplaceAuth!.role === "ADMIN" && body.role !== "ADMIN") {
+    return res.status(409).json({
+      message: "This approved admin email belongs to the admin account. Sign out and use a different account for buyer or seller access."
+    });
   }
 
   const user = await clerkClient.users.updateUserMetadata(req.marketplaceAuth!.clerkId, {

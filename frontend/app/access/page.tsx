@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-type Me = { role: "BUYER" | "SELLER" | "ADMIN"; email?: string; name?: string };
+type Me = { role: "BUYER" | "SELLER" | "ADMIN"; assignedRole?: "BUYER" | "SELLER" | "ADMIN"; email?: string; name?: string };
 
 function parseRequestedRole(value?: string): "BUYER" | "SELLER" | "ADMIN" | undefined {
   return value === "BUYER" || value === "SELLER" || value === "ADMIN" ? value : undefined;
@@ -24,7 +24,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <AccessChooser currentRole={me.data?.role} requestedRole={requestedRole} />
+      <AccessChooser currentRole={me.data?.role} assignedRole={me.data?.assignedRole} requestedRole={requestedRole} />
     </main>
   );
 }

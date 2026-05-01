@@ -1,7 +1,7 @@
 "use client";
 
 import { ShieldCheck, ShoppingBag, Store } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CLIENT_API_URL } from "@/lib/clientApi";
@@ -30,8 +30,17 @@ const choices = [
   }
 ] as const;
 
-export function AccessChooser({ currentRole, requestedRole }: { currentRole?: string; requestedRole?: "BUYER" | "SELLER" | "ADMIN" }) {
+export function AccessChooser({
+  currentRole,
+  assignedRole,
+  requestedRole
+}: {
+  currentRole?: "BUYER" | "SELLER" | "ADMIN";
+  assignedRole?: "BUYER" | "SELLER" | "ADMIN";
+  requestedRole?: "BUYER" | "SELLER" | "ADMIN";
+}) {
   const { getToken } = useAuth();
+  const { signOut } = useClerk();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -40,9 +49,19 @@ export function AccessChooser({ currentRole, requestedRole }: { currentRole?: st
   async function choose(role: "BUYER" | "SELLER" | "ADMIN", href: string) {
     setMessage("");
 
-    if (currentRole === "ADMIN" && role !== "ADMIN") {
+    if (currentRole === role && assignedRole) {
       router.push(href);
       router.refresh();
+      return;
+    }
+
+    if (assignedRole && assignedRole !== role) {
+      await signOut({ redirectUrl: `/access?role=${role}` });
+      return;
+    }
+
+    if (!assignedRole && currentRole === "ADMIN" && role !== "ADMIN") {
+      await signOut({ redirectUrl: `/access?role=${role}` });
       return;
     }
 
@@ -72,10 +91,8 @@ export function AccessChooser({ currentRole, requestedRole }: { currentRole?: st
     if (!requestedRole || appliedRequestedRole.current) return;
     appliedRequestedRole.current = true;
     const selected = choices.find((choice) => choice.role === requestedRole);
-    if (selected && currentRole !== requestedRole) {
+    if (selected) {
       void choose(selected.role, selected.href);
-    } else if (selected) {
-      router.replace(selected.href);
     }
   }, [currentRole, requestedRole, router]);
 
@@ -84,7 +101,9 @@ export function AccessChooser({ currentRole, requestedRole }: { currentRole?: st
       <div>
         <p className="text-sm font-semibold text-slate-600">Signed in role</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">{currentRole ?? "BUYER"}</h1>
-        {requestedRole && <p className="mt-2 text-sm text-slate-600">Applying {requestedRole} access...</p>}
+        <p className="mt-2 text-sm text-slate-600">
+          {assignedRole ? `This account is locked as ${assignedRole}.` : "This new account will be assigned to the selected role."}
+        </p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {choices.map((choice) => (
@@ -95,7 +114,9 @@ export function AccessChooser({ currentRole, requestedRole }: { currentRole?: st
             className="focus-ring rounded-lg border border-line bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-md disabled:opacity-60"
           >
             <choice.icon className="h-6 w-6 text-brand" />
-            <h2 className="mt-4 text-lg font-bold">{loading === choice.role ? "Saving..." : choice.title}</h2>
+            <h2 className="mt-4 text-lg font-bold">
+              {loading === choice.role ? "Saving..." : assignedRole && assignedRole !== choice.role ? `Sign out for ${choice.role}` : choice.title}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">{choice.description}</p>
           </button>
         ))}

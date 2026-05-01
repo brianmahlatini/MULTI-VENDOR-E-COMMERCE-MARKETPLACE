@@ -8,13 +8,13 @@ const choices = [
   {
     role: "BUYER",
     title: "Buyer",
-    description: "Create or sign in to a buyer account for shopping, cart, checkout, and order tracking.",
+    description: "Use a buyer account for shopping, cart, checkout, and order tracking.",
     icon: ShoppingBag
   },
   {
     role: "SELLER",
     title: "Seller",
-    description: "Create or sign in to a seller account for products, inventory, orders, and revenue tracking.",
+    description: "Use a seller account for products, inventory, orders, and revenue tracking.",
     icon: Store
   },
   {
@@ -34,8 +34,8 @@ export function AccessEntry() {
   return (
     <main className="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[420px_1fr]">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-ink">Choose How To Sign In</h1>
-        <p className="mt-3 text-slate-600">Pick the role first. The login/register form on this page will apply the right permissions after Clerk signs you in.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-ink">Choose Account Type</h1>
+        <p className="mt-3 text-slate-600">Use separate accounts for buyer, seller, and admin. New buyer or seller accounts are assigned once after sign-up.</p>
 
         <div className="mt-6 grid gap-3">
           {choices.map((choice) => (
@@ -85,7 +85,7 @@ export function AccessEntry() {
 
         {selectedRole === "ADMIN" && (
           <p className="mb-5 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-600">
-            Admin is login only. Use the approved Google account: mahlatinibrian@gmail.com.
+            Admin is login only. Use the approved admin account: mahlatinibrian@gmail.com.
           </p>
         )}
 

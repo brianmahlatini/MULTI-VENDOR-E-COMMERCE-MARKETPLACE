@@ -1,17 +1,17 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-const isProtectedRoute = createRouteMatcher([
-  "/admin(.*)",
-  "/cart(.*)",
-  "/checkout(.*)",
-  "/seller(.*)"
-]);
+const protectedPrefixes = ["/admin", "/cart", "/checkout", "/seller"];
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect({ unauthenticatedUrl: new URL("/access", req.url).toString() });
+export function middleware(req: NextRequest) {
+  const isProtected = protectedPrefixes.some((prefix) => req.nextUrl.pathname.startsWith(prefix));
+  if (!isProtected || req.cookies.has("marketplace_session")) {
+    return NextResponse.next();
   }
-});
+
+  const url = req.nextUrl.clone();
+  url.pathname = "/access";
+  return NextResponse.redirect(url);
+}
 
 export const config = {
   matcher: ["/((?!_next|.*\\..*).*)", "/"]

@@ -1,15 +1,14 @@
-import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
 
 const API_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const { getToken } = await auth();
-  const token = await getToken();
+  const cookieHeader = (await headers()).get("cookie");
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       ...init.headers
     },
     cache: init.cache ?? "no-store"
@@ -23,13 +22,12 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<{ data?: T; status: number; error?: string }> {
-  const { getToken } = await auth();
-  const token = await getToken();
+  const cookieHeader = (await headers()).get("cookie");
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       ...init.headers
     },
     cache: init.cache ?? "no-store"

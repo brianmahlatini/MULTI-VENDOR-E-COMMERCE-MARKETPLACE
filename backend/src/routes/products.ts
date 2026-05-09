@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { clerkMiddleware } from "@clerk/express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { Product } from "../models/Product.js";
@@ -54,43 +53,43 @@ productsRouter.get("/:id", async (req, res) => {
   res.json(product);
 });
 
-productsRouter.post("/", clerkMiddleware(), requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
+productsRouter.post("/", requireAuth, requireRole("SELLER"), async (req, res) => {
   const body = productSchema.parse(req.body);
-  const product = await Product.create({ ...body, sellerId: req.marketplaceAuth!.clerkId });
+  const product = await Product.create({ ...body, sellerId: req.marketplaceAuth!.userId });
   await bustProductCache();
   res.status(201).json(product);
 });
 
-productsRouter.patch("/:id", clerkMiddleware(), requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
+productsRouter.patch("/:id", requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
   const body = productSchema.partial().parse(req.body);
-  const filter = req.marketplaceAuth!.role === "ADMIN" ? { _id: req.params.id } : { _id: req.params.id, sellerId: req.marketplaceAuth!.clerkId };
+  const filter = req.marketplaceAuth!.role === "ADMIN" ? { _id: req.params.id } : { _id: req.params.id, sellerId: req.marketplaceAuth!.userId };
   const product = await Product.findOneAndUpdate(filter, body, { new: true });
   if (!product) return res.status(404).json({ message: "Product not found" });
   await bustProductCache();
   res.json(product);
 });
 
-productsRouter.delete("/:id", clerkMiddleware(), requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
-  const filter = req.marketplaceAuth!.role === "ADMIN" ? { _id: req.params.id } : { _id: req.params.id, sellerId: req.marketplaceAuth!.clerkId };
+productsRouter.delete("/:id", requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
+  const filter = req.marketplaceAuth!.role === "ADMIN" ? { _id: req.params.id } : { _id: req.params.id, sellerId: req.marketplaceAuth!.userId };
   const product = await Product.findOneAndUpdate(filter, { active: false }, { new: true });
   if (!product) return res.status(404).json({ message: "Product not found" });
   await bustProductCache();
   res.status(204).send();
 });
 
-productsRouter.post("/:id/reviews", clerkMiddleware(), requireAuth, async (req, res) => {
+productsRouter.post("/:id/reviews", requireAuth, requireRole("BUYER"), async (req, res) => {
   const body = z.object({ rating: z.number().int().min(1).max(5), comment: z.string().min(3).max(1200) }).parse(req.body);
   const product = await Product.findByIdAndUpdate(
     req.params.id,
-    { $push: { reviews: { ...body, buyerId: req.marketplaceAuth!.clerkId, buyerName: req.marketplaceAuth!.name ?? "Customer" } } },
+    { $push: { reviews: { ...body, buyerId: req.marketplaceAuth!.userId, buyerName: req.marketplaceAuth!.name ?? "Customer" } } },
     { new: true }
   );
   if (!product) return res.status(404).json({ message: "Product not found" });
   res.status(201).json(product);
 });
 
-productsRouter.post("/uploads/sign", clerkMiddleware(), requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
+productsRouter.post("/uploads/sign", requireAuth, requireRole("SELLER"), async (req, res) => {
   const body = z.object({ fileName: z.string().min(1), contentType: z.string().min(1) }).parse(req.body);
-  const key = `products/${req.marketplaceAuth!.clerkId}/${Date.now()}-${body.fileName}`;
+  const key = `products/${req.marketplaceAuth!.userId}/${Date.now()}-${body.fileName}`;
   res.json(await createUploadUrl(key, body.contentType));
 });

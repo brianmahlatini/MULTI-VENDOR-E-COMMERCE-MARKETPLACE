@@ -4,8 +4,8 @@ import { prisma } from "../db/postgres.js";
 
 export const ordersRouter = Router();
 
-ordersRouter.get("/mine", requireAuth, requireRole("BUYER", "ADMIN"), async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { clerkId: req.marketplaceAuth!.clerkId } });
+ordersRouter.get("/mine", requireAuth, requireRole("BUYER"), async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.marketplaceAuth!.userId } });
   if (!user) return res.json([]);
   const orders = await prisma.order.findMany({
     where: { buyerId: user.id },
@@ -15,9 +15,9 @@ ordersRouter.get("/mine", requireAuth, requireRole("BUYER", "ADMIN"), async (req
   res.json(orders);
 });
 
-ordersRouter.get("/seller", requireAuth, requireRole("SELLER", "ADMIN"), async (req, res) => {
+ordersRouter.get("/seller", requireAuth, requireRole("SELLER"), async (req, res) => {
   const items = await prisma.orderItem.findMany({
-    where: req.marketplaceAuth!.role === "ADMIN" ? {} : { sellerId: req.marketplaceAuth!.clerkId },
+    where: { sellerId: req.marketplaceAuth!.userId },
     include: { order: true },
     orderBy: { order: { createdAt: "desc" } }
   });
@@ -31,6 +31,6 @@ ordersRouter.get("/:id", requireAuth, async (req, res) => {
     include: { items: true, payments: true, logs: true, buyer: true }
   });
   if (!order) return res.status(404).json({ message: "Order not found" });
-  if (req.marketplaceAuth!.role !== "ADMIN" && order.buyer.clerkId !== req.marketplaceAuth!.clerkId) return res.status(403).json({ message: "Forbidden" });
+  if (req.marketplaceAuth!.role !== "ADMIN" && order.buyerId !== req.marketplaceAuth!.userId) return res.status(403).json({ message: "Forbidden" });
   res.json(order);
 });

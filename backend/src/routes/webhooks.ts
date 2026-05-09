@@ -15,7 +15,7 @@ webhooksRouter.post("/stripe", raw({ type: "application/json" }), async (req, re
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const orderId = session.metadata?.orderId;
-    const sellerClerkId = session.metadata?.sellerClerkId;
+    const sellerUserId = session.metadata?.sellerUserId;
 
     if (orderId) {
       const order = await prisma.order.update({
@@ -34,16 +34,16 @@ webhooksRouter.post("/stripe", raw({ type: "application/json" }), async (req, re
       await orderQueue.add("process-paid-order", { orderId: order.id });
     }
 
-    if (sellerClerkId && session.subscription && session.customer) {
+    if (sellerUserId && session.subscription && session.customer) {
       await prisma.sellerSubscription.upsert({
-        where: { sellerClerkId },
+        where: { sellerUserId },
         update: {
           active: true,
           stripeSubscriptionId: session.subscription.toString(),
           stripeCustomerId: session.customer.toString()
         },
         create: {
-          sellerClerkId,
+          sellerUserId,
           active: true,
           stripeSubscriptionId: session.subscription.toString(),
           stripeCustomerId: session.customer.toString()

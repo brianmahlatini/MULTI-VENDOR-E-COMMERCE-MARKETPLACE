@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { BarChart3, Boxes, DollarSign, PackageCheck } from "lucide-react";
 import { SellerProductForm } from "@/components/SellerProductForm";
@@ -14,13 +13,8 @@ type SellerDashboard = {
 type Me = { role: "BUYER" | "SELLER" | "ADMIN"; email?: string; name?: string };
 
 export default async function SellerPage() {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/access?role=SELLER");
-  }
-
   const me = await apiRequest<Me>("/auth/me");
-  if (!me.data || !["SELLER", "ADMIN"].includes(me.data.role)) {
+  if (me.data?.role !== "SELLER") {
     redirect("/access?role=SELLER");
   }
 

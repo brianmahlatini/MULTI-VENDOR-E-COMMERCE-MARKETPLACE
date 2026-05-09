@@ -1,6 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
 import { AccessEntry } from "@/components/AccessEntry";
-import { AccessChooser } from "@/components/AccessChooser";
 import { apiRequest } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -12,19 +10,9 @@ function parseRequestedRole(value?: string): "BUYER" | "SELLER" | "ADMIN" | unde
 }
 
 export default async function AccessPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
-  const { userId } = await auth();
   const params = await searchParams;
   const requestedRole = parseRequestedRole(params.role);
-
-  if (!userId) {
-    return <AccessEntry />;
-  }
-
   const me = await apiRequest<Me>("/auth/me");
 
-  return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <AccessChooser currentRole={me.data?.role} assignedRole={me.data?.assignedRole} requestedRole={requestedRole} />
-    </main>
-  );
+  return <AccessEntry currentUser={me.data} requestedRole={requestedRole} />;
 }

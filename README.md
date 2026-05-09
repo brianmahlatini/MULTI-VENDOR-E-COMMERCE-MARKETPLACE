@@ -1,229 +1,188 @@
-# Multi-Vendor E-Commerce Marketplace
+# MarketHub
 
-MarketHub is a full-stack multi-vendor e-commerce marketplace. It supports separate buyer, seller, and admin experiences with Clerk authentication, Stripe payments, PostgreSQL order data, MongoDB product catalog data, Redis-backed jobs, and Docker Compose local development.
+MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buyer, seller, and admin experiences. It uses a Next.js frontend, an Express API, PostgreSQL for marketplace accounts and order data, MongoDB for the product catalog, Redis/BullMQ for background work, Stripe for checkout, and Docker Compose for local development.
 
-## Overview
+## Features
 
-The application is split into two workspaces:
+- Buyer storefront with product search, category filtering, product details, cart, and Stripe Checkout.
+- Seller dashboard with product creation, inventory fields, seller metrics, Stripe Connect onboarding, and seller subscription checkout.
+- Admin dashboard with platform-wide users, products, orders, revenue, and order tracking history.
+- Local username/email/password authentication stored in PostgreSQL.
+- Role-based access for `ADMIN`, `SELLER`, and `BUYER`.
+- MongoDB product catalog with seeded marketplace images.
+- Redis-backed cache helpers and BullMQ worker infrastructure.
+- Dockerized frontend, backend, worker, PostgreSQL, MongoDB, and Redis services.
 
-- `frontend`: Next.js App Router application for the storefront, access chooser, buyer cart, seller dashboard, and admin dashboard.
-- `backend`: Express TypeScript API for authentication, role enforcement, products, cart, checkout, orders, seller tools, admin metrics, webhooks, background jobs, and external services.
+## User Roles
 
-The main user flows are:
+### Admin
 
-- Buyers can browse products, add products to cart, checkout, and view order-related pages.
-- Sellers can choose seller access, create products, manage inventory, view product metrics, and review seller sales data.
-- Admins use the approved admin account to access platform-wide metrics, users, products, orders, and audit activity.
+- The first registered account becomes the only admin account.
+- Admin can access platform-wide dashboards and metrics.
+- After the first account exists, new users cannot register as admin.
 
-## Screenshots
+### Seller
 
-### Storefront
+- Sellers can access the seller dashboard.
+- Sellers can create products with title, category, price, inventory, image URL, and description.
+- Sellers can view seller revenue, orders, product count, and units sold.
+- Seller payment setup is handled through Stripe seller endpoints when Stripe keys are configured.
 
-![MarketHub storefront](docs/screenshots/home.png)
+### Buyer
 
-### Product Detail
+- Buyers can browse the catalog, view products, add items to cart, and checkout.
+- Buyer cart and order data is stored in PostgreSQL.
+- Checkout is created through Stripe Checkout.
 
-![MarketHub product detail page](docs/screenshots/product-detail.png)
+## Authentication Flow
 
-### Cart Sign-In State
-
-![MarketHub cart sign-in state](docs/screenshots/cart-sign-in.png)
-
-### Seller Sign-In State
-
-![MarketHub seller sign-in state](docs/screenshots/seller-sign-in.png)
-
-### Admin Sign-In State
-
-![MarketHub admin sign-in state](docs/screenshots/admin-sign-in.png)
-
-### Access And Clerk Sign-Up
-
-![MarketHub access and Clerk sign-up page](docs/screenshots/access.png)
+- Registration asks for `username`, `email`, `password`, and the selected access type.
+- The first successful registration is assigned `ADMIN`.
+- Every later registration must be `SELLER` or `BUYER`.
+- Login accepts username or email plus password.
+- Passwords are hashed before storage.
+- The backend creates a signed HTTP-only cookie named `marketplace_session`.
+- Protected routes read the user role from PostgreSQL before granting access.
 
 ## Tech Stack
 
-- Frontend: Next.js, React, TypeScript, Tailwind CSS, Clerk, Lucide icons
-- Backend: Node.js, Express, TypeScript, Zod validation
-- Auth: Clerk with public metadata roles
-- Payments: Stripe Checkout, Stripe Connect, seller subscription checkout, webhooks
-- Databases: PostgreSQL with Prisma, MongoDB with Mongoose
-- Cache and jobs: Redis, BullMQ
-- Storage: AWS S3 compatible product image upload signing
-- Runtime: Docker Compose
+- Frontend: Next.js App Router, React, TypeScript, Tailwind CSS, Lucide icons
+- Backend: Node.js, Express, TypeScript, Zod
+- PostgreSQL: Prisma-managed relational data
+- MongoDB: Mongoose product catalog
+- Redis: caching and BullMQ job infrastructure
+- Stripe: checkout, Connect onboarding, seller subscriptions, webhooks
+- Docker: local multi-service development
 
 ## Project Structure
 
 ```txt
 MULTI-VENDOR E-COMMERCE MARKETPLACE/
-|-- backend/
-|   |-- prisma/
-|   |   `-- schema.prisma              # PostgreSQL schema: users, carts, orders, payments, audit logs
-|   |-- src/
-|   |   |-- app.ts                     # Express app, middleware, and route mounting
-|   |   |-- server.ts                  # Backend startup and database connections
-|   |   |-- config/
-|   |   |   |-- env.ts                 # Required environment variable validation
-|   |   |   `-- logger.ts              # Pino logger setup
-|   |   |-- db/
-|   |   |   |-- mongo.ts               # MongoDB connection
-|   |   |   |-- postgres.ts            # Prisma client
-|   |   |   `-- redis.ts               # Redis connection
-|   |   |-- jobs/
-|   |   |   |-- queues.ts              # BullMQ queue definitions
-|   |   |   `-- worker.ts              # Background worker for queued order work
-|   |   |-- middleware/
-|   |   |   |-- auth.ts                # Clerk auth, role normalization, role guards
-|   |   |   |-- error.ts               # Central API error handler
-|   |   |   `-- rateLimit.ts           # Checkout/API rate limiting
-|   |   |-- models/
-|   |   |   `-- Product.ts             # MongoDB product model
-|   |   |-- routes/
-|   |   |   |-- admin.ts               # Admin dashboard metrics and audit activity
-|   |   |   |-- auth.ts                # Current user and role switching
-|   |   |   |-- cart.ts                # Buyer cart read/update APIs
-|   |   |   |-- checkout.ts            # Stripe Checkout session creation
-|   |   |   |-- orders.ts              # Buyer/seller/admin order APIs
-|   |   |   |-- products.ts            # Product catalog, seller CRUD, image upload signing
-|   |   |   |-- seller.ts              # Seller dashboard, Connect account, subscription
-|   |   |   `-- webhooks.ts            # Stripe webhook handlers
-|   |   |-- scripts/
-|   |   |   `-- seedProducts.ts        # Product seeding helper
-|   |   `-- services/
-|   |       |-- cache.ts               # Redis cache helpers
-|   |       |-- storage.ts             # S3 upload signing
-|   |       `-- stripe.ts              # Stripe client
-|   |-- .env.example
-|   |-- Dockerfile
-|   |-- package.json
-|   `-- tsconfig.json
-|-- frontend/
-|   |-- app/
-|   |   |-- access/page.tsx            # Role selection and sign-in entry
-|   |   |-- admin/page.tsx             # Admin dashboard
-|   |   |-- cart/page.tsx              # Buyer cart page
-|   |   |-- checkout/success/page.tsx  # Checkout success page
-|   |   |-- products/[id]/page.tsx     # Product detail page
-|   |   |-- seller/page.tsx            # Seller dashboard and product form
-|   |   |-- globals.css                # Global styles
-|   |   |-- layout.tsx                 # App shell and Clerk provider
-|   |   `-- page.tsx                   # Storefront product catalog
-|   |-- components/
-|   |   |-- AccessChooser.tsx          # Signed-in role selector
-|   |   |-- AccessEntry.tsx            # Signed-out role-first Clerk entry
-|   |   |-- AddToCartButton.tsx        # Buyer add-to-cart action
-|   |   |-- CheckoutButton.tsx         # Buyer checkout action
-|   |   |-- ProductCard.tsx            # Storefront product card
-|   |   `-- SellerProductForm.tsx      # Seller product creation form
-|   |-- lib/
-|   |   |-- api.ts                     # Server-side API fetch helpers
-|   |   |-- clientApi.ts               # Browser API URL helper
-|   |   `-- types.ts                   # Shared frontend types
-|   |-- .env.example
-|   |-- Dockerfile
-|   |-- middleware.ts                  # Clerk middleware
-|   |-- next.config.ts
-|   |-- package.json
-|   `-- tailwind.config.ts
-|-- docker-compose.yml                 # Local services: frontend, backend, worker, Postgres, Mongo, Redis
-|-- package.json                       # Root workspace scripts
-`-- README.md
+  backend/
+    prisma/
+      schema.prisma                 PostgreSQL schema for users, carts, orders, payments, subscriptions, logs
+    src/
+      app.ts                        Express app, middleware, and route mounting
+      server.ts                     Backend startup and database connections
+      config/
+        env.ts                      Required environment variable validation
+        logger.ts                   Pino logger setup
+      db/
+        mongo.ts                    MongoDB connection
+        postgres.ts                 Prisma client
+        redis.ts                    Redis connection
+      jobs/
+        queues.ts                   BullMQ queue definitions
+        worker.ts                   Background worker entry
+      middleware/
+        auth.ts                     Cookie session auth, current user lookup, role guards
+        error.ts                    Central error handler
+        rateLimit.ts                Rate limiting for sensitive endpoints
+      models/
+        Product.ts                  MongoDB product model
+      routes/
+        admin.ts                    Admin dashboard metrics and audit activity
+        auth.ts                     Register, login, logout, current user
+        cart.ts                     Buyer cart read/update APIs
+        checkout.ts                 Stripe Checkout session creation
+        orders.ts                   Buyer, seller, and admin order APIs
+        products.ts                 Public catalog, reviews, seller product CRUD, upload signing
+        seller.ts                   Seller dashboard, Stripe Connect, seller subscriptions
+        webhooks.ts                 Stripe webhook processing
+      scripts/
+        seedProducts.ts             Product seed script with refreshed images
+      services/
+        cache.ts                    Redis cache helpers
+        storage.ts                  S3-compatible upload signing
+        stripe.ts                   Stripe client
+    .env.example
+    Dockerfile
+    package.json
+    tsconfig.json
+
+  frontend/
+    app/
+      access/page.tsx               Register/login page
+      admin/page.tsx                Admin dashboard
+      cart/page.tsx                 Buyer cart page
+      checkout/success/page.tsx     Checkout success page
+      products/[id]/page.tsx        Product detail page
+      seller/page.tsx               Seller dashboard and product form
+      globals.css                   Global styles
+      layout.tsx                    App shell and navigation
+      page.tsx                      Storefront catalog
+    components/
+      AccessEntry.tsx               Register/login UI
+      AddToCartButton.tsx           Buyer add-to-cart action
+      CheckoutButton.tsx            Buyer checkout action
+      LogoutButton.tsx              Logout action
+      ProductCard.tsx               Storefront product card
+      SellerProductForm.tsx         Seller product creation form
+    lib/
+      api.ts                        Server-side API helpers
+      clientApi.ts                  Browser API URL helper
+      types.ts                      Shared frontend types
+    .env.example
+    .env.local
+    Dockerfile
+    middleware.ts
+    next.config.ts
+    package.json
+    tailwind.config.ts
+
+  docker-compose.yml                Local frontend, backend, worker, Postgres, Mongo, Redis
+  package.json                      Root workspace scripts
+  package-lock.json                 Locked dependency versions
+  README.md
 ```
 
-## Architecture
+## Data Storage
 
-The frontend talks to the backend through REST endpoints under `/api`. Browser components use `NEXT_PUBLIC_API_URL`, while server-rendered Next.js pages use `INTERNAL_API_URL` when running inside Docker so requests can go directly to the backend service.
+PostgreSQL stores relational marketplace data:
 
-```txt
-Browser
-  `-- Next.js frontend
-        |-- Clerk session/token
-        `-- Express backend API
-              |-- Clerk user lookup and role enforcement
-              |-- PostgreSQL/Prisma for users, carts, orders, payments, logs
-              |-- MongoDB/Mongoose for products
-              |-- Redis/BullMQ for jobs
-              |-- Stripe for checkout, Connect, subscriptions, webhooks
-              `-- S3 compatible storage for image upload signing
+- Users and roles
+- Carts and cart items
+- Orders and order items
+- Payments
+- Seller subscriptions
+- Audit logs
+
+MongoDB stores catalog data:
+
+- Product title, description, category
+- Price and inventory
+- Seller ownership
+- Image URLs
+- Reviews
+- Active/inactive state
+
+Redis supports:
+
+- Product cache helpers
+- Queue connections
+- Background order work
+
+## Product Catalog
+
+The seed script creates 15 products with direct Unsplash image URLs:
+
+- Electronics: headphones, smart watch, Bluetooth speaker
+- Fashion: leather sneakers, leather tote, denim jacket
+- Home: ceramic lamp, linen bedding, stoneware mugs
+- Beauty: skin care set, lip color collection, perfume
+- Sports: yoga mat, dumbbells, insulated training bottle
+
+Refresh seeded products:
+
+```bash
+docker compose exec backend npm run seed:products
 ```
 
-## Roles and Access
+The seed removes old `seed-seller-*` products before inserting the refreshed catalog and clears the product cache after seeding.
 
-Roles are stored in Clerk public metadata using the key `role`.
+## Environment Setup
 
-Allowed roles:
-
-- `BUYER`
-- `SELLER`
-- `ADMIN`
-
-Example Clerk public metadata:
-
-```json
-{
-  "role": "ADMIN"
-}
-```
-
-Access behavior:
-
-- Buyer is the default role and can shop, manage cart, and checkout.
-- Seller can create products, manage inventory, and view seller dashboard metrics.
-- Admin has platform-wide access and can also open buyer and seller areas without losing admin permission.
-
-Admin protection:
-
-- Add the approved admin email to `ADMIN_EMAILS` in `backend/.env`.
-- The current approved admin email is `mahlatinibrian@gmail.com`.
-- If the Clerk dashboard has `publicMetadata.role` set to `ADMIN`, the backend treats that account as admin.
-
-## API Routes
-
-Backend routes are mounted in `backend/src/app.ts`.
-
-```txt
-GET    /health                         # Backend health check
-
-/api/auth
-GET    /me                             # Current Clerk user mapped to marketplace role
-POST   /role                           # Set BUYER, SELLER, or ADMIN role
-
-/api/products
-GET    /                               # Public product listing and search
-GET    /:id                            # Public product detail
-POST   /                               # Seller/admin create product
-PATCH  /:id                            # Seller/admin update product
-DELETE /:id                            # Seller/admin deactivate/delete product
-POST   /uploads/sign                   # Seller/admin S3 upload signing
-
-/api/cart
-GET    /                               # Get or create current buyer cart
-POST   /items                          # Add item to cart
-PATCH  /items/:id                      # Update cart item quantity
-DELETE /items/:id                      # Remove cart item
-
-/api/checkout
-POST   /                               # Create Stripe Checkout session
-
-/api/orders
-GET    /                               # Buyer/admin order access
-GET    /seller                         # Seller/admin order access
-
-/api/seller
-GET    /dashboard                      # Seller dashboard metrics and products
-POST   /connect-account                # Create Stripe Connect onboarding link
-POST   /subscription                   # Create seller subscription checkout
-
-/api/admin
-GET    /dashboard                      # Platform metrics and audit logs
-
-/api/webhooks
-POST   /                               # Stripe webhook processing
-```
-
-## Environment Variables
-
-Copy the example files before running locally:
+Create environment files:
 
 ```bash
 cp backend/.env.example backend/.env
@@ -239,10 +198,7 @@ FRONTEND_URL=http://localhost:3000
 DATABASE_URL=postgresql://marketplace:marketplace@localhost:5432/marketplace?schema=public
 MONGODB_URI=mongodb://localhost:27017/marketplace
 REDIS_URL=redis://localhost:6379
-
-CLERK_SECRET_KEY=
-CLERK_WEBHOOK_SECRET=
-ADMIN_EMAILS=mahlatinibrian@gmail.com
+AUTH_SECRET=replace-with-a-long-random-secret
 
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
@@ -257,98 +213,93 @@ AWS_S3_BUCKET=
 Frontend variables:
 
 ```txt
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Docker Compose overrides the internal service URLs for containers:
+Docker Compose sets internal service URLs for containers:
 
-- `DATABASE_URL`: points backend/worker to the `postgres` service.
-- `MONGODB_URI`: points backend to the `mongo` service.
-- `REDIS_URL`: points backend/worker to the `redis` service.
-- `INTERNAL_API_URL`: points frontend server-side requests to `http://backend:4000/api`.
+- `DATABASE_URL` points backend and worker to `postgres`.
+- `MONGODB_URI` points backend to `mongo`.
+- `REDIS_URL` points backend and worker to `redis`.
+- `INTERNAL_API_URL` points frontend server-side requests to `http://backend:4000/api`.
 
-## Local Setup
+## Run With Docker
 
-1. Install dependencies:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Create and fill environment files:
-
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
-```
-
-3. Start the full stack:
+Start the full stack:
 
 ```bash
 docker compose up --build
 ```
 
-4. Run Prisma migrations inside the backend container:
-
-```bash
-docker compose exec backend npm run prisma:migrate
-```
-
-5. Open the app:
+Open:
 
 ```txt
 Frontend: http://localhost:3000
 Backend health: http://localhost:4000/health
 ```
 
-## Useful Scripts
-
-Run from the project root:
+Run in the background:
 
 ```bash
-npm run dev              # Start Docker Compose stack
-npm run dev:frontend     # Start frontend only
-npm run dev:backend      # Start backend only
-npm run build            # Build frontend and backend
-npm run lint             # Lint frontend and backend
+docker compose up --build -d
 ```
 
-Run backend workspace scripts:
+Check services:
 
 ```bash
-npm --workspace backend run build
-npm --workspace backend run dev
-npm --workspace backend run prisma:generate
-npm --workspace backend run prisma:migrate
-npm --workspace backend run prisma:deploy
-npm --workspace backend run seed:products
-npm --workspace backend run worker
+docker compose ps
 ```
 
-Run frontend workspace scripts:
+## Useful Commands
+
+Root commands:
 
 ```bash
-npm --workspace frontend run dev
-npm --workspace frontend run build
-npm --workspace frontend run start
-npm --workspace frontend run lint
+npm run build
+npm run lint
 ```
 
-On Windows PowerShell, if `npm.ps1` is blocked by execution policy, use:
+Backend commands:
+
+```bash
+cmd /c npm --workspace backend run build
+cmd /c npm --workspace backend run dev
+cmd /c npm --workspace backend run prisma:generate
+cmd /c npm --workspace backend run prisma:migrate
+cmd /c npm --workspace backend run seed:products
+cmd /c npm --workspace backend run worker
+```
+
+Frontend commands:
 
 ```bash
 cmd /c npm --workspace frontend run build
-cmd /c npm --workspace backend run build
+cmd /c npm --workspace frontend run dev
+cmd /c npm --workspace frontend run start
+cmd /c npm --workspace frontend run lint
+```
+
+Docker commands:
+
+```bash
+docker compose up --build -d
+docker compose ps
+docker compose logs --tail=100 backend
+docker compose exec backend npm run seed:products
 ```
 
 ## Main Pages
 
 ```txt
 /                       Storefront product catalog
-/access                 Role selection and Clerk sign-in/sign-up entry
+/access                 Register/login page
 /products/[id]          Product detail
 /cart                   Buyer cart
 /checkout/success       Stripe checkout success
@@ -356,124 +307,88 @@ cmd /c npm --workspace backend run build
 /admin                  Admin dashboard
 ```
 
-## Data Model Summary
+## API Routes
 
-PostgreSQL stores relational marketplace data:
+```txt
+GET    /health
 
-- Users
-- Carts and cart items
-- Orders and order items
-- Payments
-- Seller subscriptions/accounts
-- Audit logs
+/api/auth
+GET    /me
+POST   /register
+POST   /login
+POST   /logout
 
-MongoDB stores product catalog data:
+/api/products
+GET    /
+GET    /:id
+POST   /
+PATCH  /:id
+DELETE /:id
+POST   /:id/reviews
+POST   /uploads/sign
 
-- Product title, description, category
-- Price and inventory
-- Seller Clerk ID
-- Image URLs
-- Active/inactive state
+/api/cart
+GET    /
+POST   /items
+PATCH  /items/:id
+DELETE /items/:id
 
-Redis supports:
+/api/checkout
+POST   /
 
-- Queue infrastructure
-- Background order work
-- Cache helpers
+/api/orders
+GET    /mine
+GET    /seller
+GET    /:id
 
-## Buyer Flow
+/api/seller
+GET    /dashboard
+POST   /connect-account
+POST   /subscription
 
-1. Visit `/access`.
-2. Choose Buyer and sign in or sign up.
-3. Browse the storefront at `/`.
-4. Open a product detail page.
-5. Add items to the cart.
-6. Visit `/cart`.
-7. Start checkout through Stripe.
-8. Return to `/checkout/success`.
+/api/admin
+GET    /dashboard
 
-## Seller Flow
-
-1. Visit `/access`.
-2. Choose Seller and sign in or sign up.
-3. Open `/seller`.
-4. Create products using title, category, price, inventory, image URL, and description.
-5. View seller metrics and product list.
-6. Use seller Stripe account/subscription endpoints when payment setup is configured.
-
-## Admin Flow
-
-1. Set the admin user's Clerk public metadata:
-
-```json
-{
-  "role": "ADMIN"
-}
+/api/webhooks
+POST   /stripe
 ```
 
-2. Add the admin email to `ADMIN_EMAILS` in `backend/.env`.
-3. Sign in with the approved admin account.
-4. Open `/admin`.
-5. View platform metrics and audit activity.
-6. Admin users can also open buyer and seller areas while keeping admin permissions.
+## Stripe Setup
 
-## Stripe Notes
+Stripe is used for buyer checkout, seller subscriptions, seller Connect onboarding, and webhook updates.
 
-The app uses Stripe for:
-
-- Buyer checkout sessions
-- Seller subscriptions
-- Seller Connect onboarding
-- Payment confirmation webhooks
-
-For local webhook testing, use the Stripe CLI and forward events to the backend webhook route:
+For local webhook testing:
 
 ```bash
-stripe listen --forward-to localhost:4000/api/webhooks
+stripe listen --forward-to localhost:4000/api/webhooks/stripe
 ```
 
 Put the returned webhook signing secret in `STRIPE_WEBHOOK_SECRET`.
 
-## Product Images
+## Fresh Start
 
-The seller form currently accepts an image URL directly. The backend also includes an upload signing endpoint under `/api/products/uploads/sign` for S3 compatible uploads. To use signed uploads in the UI, wire the frontend image input to request a signed upload URL, upload the file to S3, then save the resulting public image URL on the product.
+To clear PostgreSQL marketplace data in Docker and make the next registration become the admin account:
 
-## Development Notes
+```bash
+docker compose exec backend node -e "const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); const d=String.fromCharCode(34); const q=(s)=>d+s+d; (async()=>{ await prisma.$executeRawUnsafe('TRUNCATE TABLE '+q('AuditLog')+', '+q('Payment')+', '+q('OrderItem')+', '+q('Order')+', '+q('CartItem')+', '+q('Cart')+', '+q('SellerSubscription')+', '+q('User')+' RESTART IDENTITY CASCADE'); console.log('fresh'); })().finally(()=>prisma.$disconnect());"
+```
 
-- Backend environment variables are validated at startup in `backend/src/config/env.ts`.
-- Protected backend routes use Clerk middleware plus `requireAuth`.
-- Role-specific routes use `requireRole`.
-- Product catalog reads are public, while product creation and editing require seller or admin access.
-- Checkout requires an authenticated user and a non-empty cart.
-- Admin dashboard requires `ADMIN`.
-- Seller dashboard requires `SELLER` or `ADMIN`.
+This clears users, carts, orders, payments, audit logs, and seller subscriptions. It does not remove MongoDB products.
 
-## Build Verification
+## Verification
 
-Use these commands before submitting changes:
+Before handing off changes, verify:
 
 ```bash
 cmd /c npm --workspace backend run build
 cmd /c npm --workspace frontend run build
+docker compose up --build -d
+docker compose exec backend npm run seed:products
 ```
 
 Expected result:
 
-- Backend TypeScript compiles successfully.
-- Frontend Next.js production build compiles successfully.
-
-## Deployment
-
-The project is container-ready. A typical deployment needs:
-
-- Frontend service running the Next.js app
-- Backend service running the Express API
-- Worker service running `npm run worker`
-- PostgreSQL database
-- MongoDB database
-- Redis instance
-- Clerk application
-- Stripe account and webhook
-- S3 compatible bucket
-
-Set production environment variables for each service, run Prisma migrations against production PostgreSQL, and configure Clerk/Stripe callback URLs to match the deployed frontend and backend domains.
+- Backend TypeScript compiles.
+- Frontend Next.js build compiles.
+- Docker services start successfully.
+- Storefront shows the refreshed seeded product images.

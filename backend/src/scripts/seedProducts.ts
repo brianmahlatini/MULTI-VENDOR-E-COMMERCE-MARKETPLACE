@@ -1,24 +1,34 @@
 import { connectMongo } from "../db/mongo.js";
 import { Product } from "../models/Product.js";
+import { bustProductCache } from "../services/cache.js";
 
 const products = [
   {
     sellerId: "seed-seller-electronics",
-    title: "Wireless Noise Cancelling Headphones",
-    description: "Comfortable over-ear headphones with long battery life, active noise cancelling, and crisp everyday sound.",
+    title: "Studio Wireless Headphones",
+    description: "Comfortable over-ear headphones with active noise cancelling, rich bass, and all-day battery life.",
     category: "Electronics",
-    price: 129.99,
-    inventory: 24,
-    imageUrls: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80"]
+    price: 149.99,
+    inventory: 28,
+    imageUrls: ["https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-electronics",
-    title: "Smart Watch Fitness Tracker",
+    title: "Aluminum Smart Watch",
     description: "A lightweight smart watch for activity tracking, notifications, heart-rate monitoring, and daily productivity.",
     category: "Electronics",
     price: 89.99,
     inventory: 31,
     imageUrls: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80"]
+  },
+  {
+    sellerId: "seed-seller-electronics",
+    title: "Portable Bluetooth Speaker",
+    description: "Compact wireless speaker with water-resistant housing, clear vocals, and room-filling sound.",
+    category: "Electronics",
+    price: 64.99,
+    inventory: 42,
+    imageUrls: ["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-fashion",
@@ -27,16 +37,25 @@ const products = [
     category: "Fashion",
     price: 74.5,
     inventory: 46,
-    imageUrls: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"]
+    imageUrls: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-fashion",
-    title: "Structured Canvas Tote Bag",
-    description: "Durable canvas tote with reinforced handles, interior pockets, and enough room for work or weekend errands.",
+    title: "Structured Leather Tote",
+    description: "Durable tote with reinforced handles, interior pockets, and enough room for work or weekend errands.",
     category: "Fashion",
-    price: 39.99,
+    price: 59.99,
     inventory: 58,
-    imageUrls: ["https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=1200&q=80"]
+    imageUrls: ["https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=1200&q=80"]
+  },
+  {
+    sellerId: "seed-seller-fashion",
+    title: "Lightweight Denim Jacket",
+    description: "A relaxed denim jacket with durable stitching, easy layering, and a timeless everyday fit.",
+    category: "Fashion",
+    price: 82,
+    inventory: 23,
+    imageUrls: ["https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-home",
@@ -49,12 +68,21 @@ const products = [
   },
   {
     sellerId: "seed-seller-home",
-    title: "Textured Cotton Throw Pillow",
-    description: "Soft decorative pillow with a woven cotton cover, neutral texture, and removable insert.",
+    title: "Linen Bedding Set",
+    description: "Soft breathable bedding with a clean woven texture, neutral palette, and year-round comfort.",
     category: "Home",
-    price: 22.99,
-    inventory: 64,
-    imageUrls: ["https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=1200&q=80"]
+    price: 96,
+    inventory: 21,
+    imageUrls: ["https://images.unsplash.com/photo-1616627561950-9f746e330187?auto=format&fit=crop&w=1200&q=80"]
+  },
+  {
+    sellerId: "seed-seller-home",
+    title: "Stoneware Coffee Mug Set",
+    description: "A set of glazed stoneware mugs with a comfortable handle and handmade-inspired finish.",
+    category: "Home",
+    price: 28.5,
+    inventory: 49,
+    imageUrls: ["https://images.unsplash.com/photo-1514228742587-6b1558fcf93a?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-beauty",
@@ -63,7 +91,7 @@ const products = [
     category: "Beauty",
     price: 48,
     inventory: 37,
-    imageUrls: ["https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80"]
+    imageUrls: ["https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-beauty",
@@ -73,6 +101,15 @@ const products = [
     price: 29.99,
     inventory: 43,
     imageUrls: ["https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=80"]
+  },
+  {
+    sellerId: "seed-seller-beauty",
+    title: "Signature Eau de Parfum",
+    description: "A balanced fragrance with fresh citrus, soft florals, and warm amber for everyday wear.",
+    category: "Beauty",
+    price: 68,
+    inventory: 26,
+    imageUrls: ["https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-sports",
@@ -91,6 +128,15 @@ const products = [
     price: 119,
     inventory: 15,
     imageUrls: ["https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80"]
+  },
+  {
+    sellerId: "seed-seller-sports",
+    title: "Insulated Training Bottle",
+    description: "Double-wall stainless steel bottle that keeps drinks cold through workouts, hikes, and daily commutes.",
+    category: "Sports",
+    price: 24.99,
+    inventory: 67,
+    imageUrls: ["https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=1200&q=80"]
   }
 ];
 
@@ -98,6 +144,7 @@ async function main() {
   await connectMongo();
   await Product.deleteMany({ sellerId: /^seed-seller-/ });
   await Product.insertMany(products);
+  await bustProductCache();
   console.log(`Seeded ${products.length} products`);
   process.exit(0);
 }

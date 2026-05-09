@@ -7,10 +7,10 @@ import { env } from "../config/env.js";
 
 export const sellerRouter = Router();
 
-sellerRouter.use(requireAuth, requireRole("SELLER", "ADMIN"));
+sellerRouter.use(requireAuth, requireRole("SELLER"));
 
 sellerRouter.get("/dashboard", async (req, res) => {
-  const sellerId = req.marketplaceAuth!.clerkId;
+  const sellerId = req.marketplaceAuth!.userId;
   const [products, orderItems] = await Promise.all([
     Product.find({ sellerId, active: true }).sort({ createdAt: -1 }),
     prisma.orderItem.findMany({ where: { sellerId }, include: { order: true } })
@@ -39,16 +39,9 @@ sellerRouter.post("/connect-account", async (req, res) => {
     }
   });
 
-  await prisma.user.upsert({
-    where: { clerkId: req.marketplaceAuth!.clerkId },
-    update: { stripeAccountId: account.id },
-    create: {
-      clerkId: req.marketplaceAuth!.clerkId,
-      email: req.marketplaceAuth!.email ?? `${req.marketplaceAuth!.clerkId}@clerk.local`,
-      name: req.marketplaceAuth!.name,
-      role: "SELLER",
-      stripeAccountId: account.id
-    }
+  await prisma.user.update({
+    where: { id: req.marketplaceAuth!.userId },
+    data: { stripeAccountId: account.id }
   });
 
   const link = await stripe.accountLinks.create({
@@ -68,7 +61,7 @@ sellerRouter.post("/subscription", async (req, res) => {
     success_url: `${env.FRONTEND_URL}/seller?subscription=success`,
     cancel_url: `${env.FRONTEND_URL}/seller?subscription=cancelled`,
     line_items: [{ price: env.STRIPE_SELLER_SUBSCRIPTION_PRICE_ID, quantity: 1 }],
-    metadata: { sellerClerkId: req.marketplaceAuth!.clerkId }
+    metadata: { sellerUserId: req.marketplaceAuth!.userId }
   });
 
   res.json({ checkoutUrl: session.url });

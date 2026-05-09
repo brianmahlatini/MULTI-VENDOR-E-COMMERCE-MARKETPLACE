@@ -2,18 +2,15 @@
 
 import { ImagePlus, Plus } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@clerk/nextjs";
 import { CLIENT_API_URL } from "@/lib/clientApi";
 
 export function SellerProductForm() {
-  const { getToken } = useAuth();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   async function createProduct(formData: FormData) {
     setSaving(true);
     setMessage("");
-    const token = await getToken();
     const payload = {
       title: String(formData.get("title")),
       description: String(formData.get("description")),
@@ -25,9 +22,9 @@ export function SellerProductForm() {
 
     const response = await fetch(`${CLIENT_API_URL}/products`, {
       method: "POST",
+      credentials: "include",
       headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
     });

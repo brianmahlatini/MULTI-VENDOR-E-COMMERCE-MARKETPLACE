@@ -1,8 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { CheckoutButton } from "@/components/CheckoutButton";
-import { apiFetch } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -11,16 +10,18 @@ type Cart = {
 };
 
 export default async function CartPage() {
-  const { userId } = await auth();
-  if (!userId) redirect("/access?role=BUYER");
+  const cartResponse = await apiRequest<Cart>("/cart");
+  if (cartResponse.status === 401 || cartResponse.status === 403) redirect("/access?role=BUYER");
+  if (!cartResponse.data) return <main className="mx-auto max-w-5xl px-4 py-10">Could not load your cart.</main>;
 
-  const cart = await apiFetch<Cart>("/cart");
+  const cart = cartResponse.data;
   const total = cart.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
 
   return (
     <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_320px]">
       <section className="space-y-3">
         <h1 className="text-2xl font-bold">Cart</h1>
+        {cart.items.length === 0 && <p className="rounded-lg border border-line bg-white p-4 text-slate-600">Your cart is empty.</p>}
         {cart.items.map((item) => (
           <article key={item.id} className="flex gap-4 rounded-lg border border-line bg-white p-4">
             {item.imageUrl && <Image src={item.imageUrl} alt={item.title} width={96} height={96} className="h-24 w-24 rounded-md object-cover" />}

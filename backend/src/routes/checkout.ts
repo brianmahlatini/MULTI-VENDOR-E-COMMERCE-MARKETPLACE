@@ -7,8 +7,8 @@ import { env } from "../config/env.js";
 
 export const checkoutRouter = Router();
 
-checkoutRouter.post("/", requireAuth, requireRole("BUYER", "ADMIN"), checkoutLimiter, async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { clerkId: req.marketplaceAuth!.clerkId } });
+checkoutRouter.post("/", requireAuth, requireRole("BUYER"), checkoutLimiter, async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.marketplaceAuth!.userId } });
   if (!user) return res.status(404).json({ message: "Buyer profile not found" });
 
   const cart = await prisma.cart.findFirst({ where: { buyerId: user.id }, include: { items: true } });
@@ -30,7 +30,7 @@ checkoutRouter.post("/", requireAuth, requireRole("BUYER", "ADMIN"), checkoutLim
         }))
       },
       payments: { create: { amount: total } },
-      logs: { create: { event: "CHECKOUT_CREATED", actorId: req.marketplaceAuth!.clerkId } }
+      logs: { create: { event: "CHECKOUT_CREATED", actorId: req.marketplaceAuth!.userId } }
     },
     include: { items: true }
   });

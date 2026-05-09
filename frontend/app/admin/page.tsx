@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Activity, Package, Users, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/api";
@@ -13,11 +12,6 @@ type AdminDashboard = {
 type Me = { role: "BUYER" | "SELLER" | "ADMIN"; email?: string; name?: string };
 
 export default async function AdminPage() {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/access?role=ADMIN");
-  }
-
   const me = await apiRequest<Me>("/auth/me");
   if (me.data?.role !== "ADMIN") {
     redirect("/access?role=ADMIN");

@@ -13,6 +13,36 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 - Redis-backed cache helpers and BullMQ worker infrastructure.
 - Dockerized frontend, backend, worker, PostgreSQL, MongoDB, and Redis services.
 
+## Screenshots
+
+### Current Storefront
+
+![Current MarketHub storefront](docs/screenshots/current-home.png)
+
+### Storefront
+
+![MarketHub storefront](docs/screenshots/home.png)
+
+### Product Detail
+
+![MarketHub product detail page](docs/screenshots/product-detail.png)
+
+### Access Page
+
+![MarketHub access page](docs/screenshots/access.png)
+
+### Buyer Cart Sign-In State
+
+![MarketHub cart sign-in state](docs/screenshots/cart-sign-in.png)
+
+### Seller Sign-In State
+
+![MarketHub seller sign-in state](docs/screenshots/seller-sign-in.png)
+
+### Admin Sign-In State
+
+![MarketHub admin sign-in state](docs/screenshots/admin-sign-in.png)
+
 ## User Roles
 
 ### Admin

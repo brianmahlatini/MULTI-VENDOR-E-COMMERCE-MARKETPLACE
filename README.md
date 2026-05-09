@@ -27,21 +27,9 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 
 ![MarketHub product detail page](docs/screenshots/product-detail.png)
 
-### Access Page
+### Current Account Access
 
-![MarketHub access page](docs/screenshots/access.png)
-
-### Buyer Cart Sign-In State
-
-![MarketHub cart sign-in state](docs/screenshots/cart-sign-in.png)
-
-### Seller Sign-In State
-
-![MarketHub seller sign-in state](docs/screenshots/seller-sign-in.png)
-
-### Admin Sign-In State
-
-![MarketHub admin sign-in state](docs/screenshots/admin-sign-in.png)
+![Current MarketHub account access page](docs/screenshots/current-access.png)
 
 ## User Roles
 

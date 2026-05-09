@@ -82,6 +82,7 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 
 - Frontend: Next.js App Router, React, TypeScript, Tailwind CSS, Lucide icons
 - Backend: Node.js, Express, TypeScript, Zod
+- Authentication: HTTP-only cookies, HMAC-signed sessions, Node.js crypto password hashing
 - PostgreSQL: Prisma-managed relational data
 - MongoDB: Mongoose product catalog
 - Redis: caching and BullMQ job infrastructure
@@ -426,3 +427,5 @@ Expected result:
 - Frontend Next.js build compiles.
 - Docker services start successfully.
 - Storefront shows the refreshed seeded product images.
+
+

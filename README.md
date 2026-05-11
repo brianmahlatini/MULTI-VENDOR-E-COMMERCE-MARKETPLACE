@@ -27,25 +27,21 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 
 ![MarketHub product detail page](docs/screenshots/product-detail.png)
 
-### Current Account Access
+### Access Page
 
-![Current MarketHub account access page](docs/screenshots/current-access.png)
+![MarketHub access page](docs/screenshots/access.png)
 
-### Buyer Cart
+### Buyer Cart Sign-In State
 
-![Current MarketHub buyer cart](docs/screenshots/current-cart.png)
+![MarketHub cart sign-in state](docs/screenshots/cart-sign-in.png)
 
-### Stripe Checkout
+### Seller Sign-In State
 
-![Current MarketHub Stripe Checkout page](docs/screenshots/current-stripe-checkout.png)
+![MarketHub seller sign-in state](docs/screenshots/seller-sign-in.png)
 
-### Admin Dashboard
+### Admin Sign-In State
 
-![Current MarketHub admin dashboard](docs/screenshots/current-admin-dashboard.png)
-
-### Seller Dashboard
-
-![Current MarketHub seller dashboard](docs/screenshots/current-seller-dashboard.png)
+![MarketHub admin sign-in state](docs/screenshots/admin-sign-in.png)
 
 ## User Roles
 
@@ -89,7 +85,7 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 - Stripe: checkout, Connect onboarding, seller subscriptions, webhooks
 - Docker: local multi-service development
 
-## Project Structure
+## Project Structure 
 
 ```txt
 MULTI-VENDOR E-COMMERCE MARKETPLACE/
@@ -427,5 +423,3 @@ Expected result:
 - Frontend Next.js build compiles.
 - Docker services start successfully.
 - Storefront shows the refreshed seeded product images.
-
-

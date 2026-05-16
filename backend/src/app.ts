@@ -9,26 +9,30 @@ import { errorHandler } from "./middleware/error.js";
 import { adminRouter } from "./routes/admin.js";
 import { authRouter } from "./routes/auth.js";
 import { cartRouter } from "./routes/cart.js";
+import { chatRouter } from "./routes/chat.js";
 import { checkoutRouter } from "./routes/checkout.js";
 import { ordersRouter } from "./routes/orders.js";
 import { productsRouter } from "./routes/products.js";
 import { sellerRouter } from "./routes/seller.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import { uploadsRoot } from "./services/storage.js";
 
 export const app = express();
 
 app.use("/api/webhooks", webhooksRouter);
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(compression());
 app.use(pinoHttp({ logger }));
 app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", express.static(uploadsRoot, { maxAge: "1d" }));
 
 app.use("/api/billing", webhooksRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/cart", cartRouter);
+app.use("/api/chat", chatRouter);
 app.use("/api/checkout", checkoutRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/seller", sellerRouter);

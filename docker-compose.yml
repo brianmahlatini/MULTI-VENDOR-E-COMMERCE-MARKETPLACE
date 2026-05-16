@@ -50,6 +50,8 @@ services:
       REDIS_URL: redis://redis:6379
     ports:
       - "4000:4000"
+    volumes:
+      - backend-uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,3 +93,4 @@ volumes:
   postgres-data:
   mongo-data:
   redis-data:
+  backend-uploads:

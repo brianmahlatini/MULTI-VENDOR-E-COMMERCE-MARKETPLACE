@@ -82,7 +82,7 @@ const products = [
     category: "Home",
     price: 28.5,
     inventory: 49,
-    imageUrls: ["https://images.unsplash.com/photo-1514228742587-6b1558fcf93a?auto=format&fit=crop&w=1200&q=80"]
+    imageUrls: ["https://images.unsplash.com/photo-1510446418220-00d2e0a27795?auto=format&fit=crop&w=1200&q=80"]
   },
   {
     sellerId: "seed-seller-beauty",

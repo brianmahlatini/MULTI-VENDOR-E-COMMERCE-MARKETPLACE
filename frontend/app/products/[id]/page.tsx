@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductImage } from "@/components/ProductImage";
 import { publicApiFetch } from "@/lib/api";
 import type { Product } from "@/lib/types";
 
@@ -12,7 +12,7 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
   return (
     <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-2">
       <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-white">
-        <Image src={product.imageUrls[0]} alt={product.title} fill className="object-cover" priority sizes="(max-width: 1024px) 100vw, 50vw" />
+        <ProductImage src={product.imageUrls[0]} alt={product.title} className="h-full w-full object-cover" />
       </div>
       <section className="space-y-6">
         <div>

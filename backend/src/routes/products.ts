@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { raw, Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { Product } from "../models/Product.js";
 import { bustProductCache, getCachedJson, setCachedJson } from "../services/cache.js";
-import { createUploadUrl } from "../services/storage.js";
+import { createUploadUrl, saveLocalProductImage } from "../services/storage.js";
 
 export const productsRouter = Router();
 
@@ -15,6 +15,35 @@ const productSchema = z.object({
   inventory: z.number().int().min(0),
   imageUrls: z.array(z.string().url()).min(1)
 });
+
+productsRouter.post(
+  "/uploads",
+  requireAuth,
+  requireRole("SELLER"),
+  raw({ type: ["image/gif", "image/jpeg", "image/png", "image/webp"], limit: "5mb" }),
+  async (req, res, next) => {
+    try {
+      const fileName = z.string().min(1).parse(req.query.fileName);
+      const contentType = String(req.headers["content-type"] ?? "").split(";")[0];
+
+      if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+        return res.status(400).json({ message: "Image file is required." });
+      }
+
+      const publicUrl = await saveLocalProductImage({
+        baseUrl: `${req.protocol}://${req.get("host")}`,
+        buffer: req.body,
+        contentType,
+        fileName,
+        sellerId: req.marketplaceAuth!.userId
+      });
+
+      res.status(201).json({ publicUrl });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 productsRouter.get("/", async (req, res) => {
   const query = z

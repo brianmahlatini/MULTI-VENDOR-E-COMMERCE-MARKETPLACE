@@ -5,11 +5,12 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 ## Features
 
 - Buyer storefront with product search, category filtering, product details, cart, and Stripe Checkout.
-- Seller dashboard with product creation, inventory fields, seller metrics, Stripe Connect onboarding, and seller subscription checkout.
-- Admin dashboard with platform-wide users, products, orders, revenue, and order tracking history.
+- Seller dashboard with product image uploads, product creation, edit/delete controls, inventory fields, seller metrics, Stripe Connect onboarding, and seller subscription checkout.
+- Admin dashboard with responsive members, available goods, orders, revenue, and order tracking history sections.
+- Real-time account chat between buyers, sellers, and admins with WebSockets and persisted MongoDB message history.
 - Local username/email/password authentication stored in PostgreSQL.
 - Role-based access for `ADMIN`, `SELLER`, and `BUYER`.
-- MongoDB product catalog with seeded marketplace images.
+- MongoDB product catalog with seeded marketplace images and chat conversations/messages.
 - Redis-backed cache helpers and BullMQ worker infrastructure.
 - Dockerized frontend, backend, worker, PostgreSQL, MongoDB, and Redis services.
 
@@ -54,13 +55,15 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 ### Seller
 
 - Sellers can access the seller dashboard.
-- Sellers can create products with title, category, price, inventory, image URL, and description.
+- Sellers can create products with title, category, price, inventory, uploaded product image, and description.
+- Sellers can view product detail pages, edit product fields, and delete products from their catalog.
 - Sellers can view seller revenue, orders, product count, and units sold.
 - Seller payment setup is handled through Stripe seller endpoints when Stripe keys are configured.
 
 ### Buyer
 
 - Buyers can browse the catalog, view products, add items to cart, and checkout.
+- Buyers can message sellers or admins from the chat interface.
 - Buyer cart and order data is stored in PostgreSQL.
 - Checkout is created through Stripe Checkout.
 
@@ -79,6 +82,7 @@ MarketHub is a full-stack multi-vendor e-commerce marketplace with separate buye
 - Frontend: Next.js App Router, React, TypeScript, Tailwind CSS, Lucide icons
 - Backend: Node.js, Express, TypeScript, Zod
 - Authentication: HTTP-only cookies, HMAC-signed sessions, Node.js crypto password hashing
+- Real-time chat: `ws` WebSocket server, MongoDB conversations, MongoDB message history
 - PostgreSQL: Prisma-managed relational data
 - MongoDB: Mongoose product catalog
 - Redis: caching and BullMQ job infrastructure
@@ -110,20 +114,24 @@ MULTI-VENDOR E-COMMERCE MARKETPLACE/
         error.ts                    Central error handler
         rateLimit.ts                Rate limiting for sensitive endpoints
       models/
+        Chat.ts                     MongoDB chat conversation and message models
         Product.ts                  MongoDB product model
       routes/
         admin.ts                    Admin dashboard metrics and audit activity
         auth.ts                     Register, login, logout, current user
         cart.ts                     Buyer cart read/update APIs
+        chat.ts                     Chat contacts, conversations, and message history APIs
         checkout.ts                 Stripe Checkout session creation
         orders.ts                   Buyer, seller, and admin order APIs
-        products.ts                 Public catalog, reviews, seller product CRUD, upload signing
+        products.ts                 Public catalog, reviews, seller product CRUD, local uploads, upload signing
         seller.ts                   Seller dashboard, Stripe Connect, seller subscriptions
         webhooks.ts                 Stripe webhook processing
       scripts/
         seedProducts.ts             Product seed script with refreshed images
       services/
         cache.ts                    Redis cache helpers
+        chat.ts                     Chat contact, conversation, and message persistence helpers
+        realtime.ts                 WebSocket chat server attachment
         storage.ts                  S3-compatible upload signing
         stripe.ts                   Stripe client
     .env.example
@@ -136,6 +144,7 @@ MULTI-VENDOR E-COMMERCE MARKETPLACE/
       access/page.tsx               Register/login page
       admin/page.tsx                Admin dashboard
       cart/page.tsx                 Buyer cart page
+      chat/page.tsx                 Account chat page
       checkout/success/page.tsx     Checkout success page
       products/[id]/page.tsx        Product detail page
       seller/page.tsx               Seller dashboard and product form
@@ -148,6 +157,8 @@ MULTI-VENDOR E-COMMERCE MARKETPLACE/
       CheckoutButton.tsx            Buyer checkout action
       LogoutButton.tsx              Logout action
       ProductCard.tsx               Storefront product card
+      ProductImage.tsx              Product image with fallback handling
+      SellerProductsManager.tsx     Seller product view/edit/delete controls
       SellerProductForm.tsx         Seller product creation form
     lib/
       api.ts                        Server-side API helpers
@@ -186,6 +197,10 @@ MongoDB stores catalog data:
 - Image URLs
 - Reviews
 - Active/inactive state
+- Chat conversations
+- Chat messages
+
+Product image uploads are saved by the backend under `/app/uploads` and served from `/uploads/...`. Docker Compose persists these files with the `backend-uploads` volume.
 
 Redis supports:
 
@@ -254,6 +269,7 @@ Docker Compose sets internal service URLs for containers:
 - `MONGODB_URI` points backend to `mongo`.
 - `REDIS_URL` points backend and worker to `redis`.
 - `INTERNAL_API_URL` points frontend server-side requests to `http://backend:4000/api`.
+- `backend-uploads` persists locally uploaded product images between container rebuilds.
 
 ## Run With Docker
 
@@ -333,6 +349,7 @@ docker compose exec backend npm run seed:products
 /access                 Register/login page
 /products/[id]          Product detail
 /cart                   Buyer cart
+/chat                   Buyer/seller/admin messaging
 /checkout/success       Stripe checkout success
 /seller                 Seller dashboard and product creation
 /admin                  Admin dashboard
@@ -357,6 +374,7 @@ PATCH  /:id
 DELETE /:id
 POST   /:id/reviews
 POST   /uploads/sign
+POST   /uploads
 
 /api/cart
 GET    /
@@ -372,6 +390,13 @@ GET    /mine
 GET    /seller
 GET    /:id
 
+/api/chat
+GET    /contacts
+GET    /conversations
+POST   /conversations
+GET    /conversations/:id/messages
+POST   /conversations/:id/messages
+
 /api/seller
 GET    /dashboard
 POST   /connect-account
@@ -382,6 +407,9 @@ GET    /dashboard
 
 /api/webhooks
 POST   /stripe
+
+/ws/chat
+WebSocket endpoint for live chat. Connect with `conversationId` as a query parameter after creating or selecting a conversation.
 ```
 
 ## Stripe Setup

@@ -1,4 +1,4 @@
-import { ShoppingCart, Store, ShieldCheck } from "lucide-react";
+import { MessageCircle, ShieldCheck, ShoppingCart, Store } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/LogoutButton";
 import { apiRequest } from "@/lib/api";
@@ -23,6 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <nav className="flex items-center gap-2 text-sm font-medium">
               <Link className="rounded-md px-3 py-2 hover:bg-slate-100" href="/seller"><Store className="mr-2 inline h-4 w-4" />Seller</Link>
               <Link className="rounded-md px-3 py-2 hover:bg-slate-100" href="/admin"><ShieldCheck className="mr-2 inline h-4 w-4" />Admin</Link>
+              <Link className="rounded-md px-3 py-2 hover:bg-slate-100" href="/chat"><MessageCircle className="mr-2 inline h-4 w-4" />Chat</Link>
               <Link className="rounded-md px-3 py-2 hover:bg-slate-100" href="/cart"><ShoppingCart className="mr-2 inline h-4 w-4" />Cart</Link>
               {me.data ? (
                 <>

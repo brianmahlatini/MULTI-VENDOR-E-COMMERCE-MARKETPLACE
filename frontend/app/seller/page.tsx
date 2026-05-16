@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import { BarChart3, Boxes, DollarSign, PackageCheck } from "lucide-react";
 import { SellerProductForm } from "@/components/SellerProductForm";
+import { SellerProductsManager } from "@/components/SellerProductsManager";
 import { apiRequest } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
 type SellerDashboard = {
   metrics: { products: number; orders: number; unitsSold: number; revenue: number };
-  products: Array<{ _id: string; title: string; inventory: number; price: number }>;
+  products: Array<{ _id: string; title: string; description: string; category: string; inventory: number; price: number }>;
 };
 
 type Me = { role: "BUYER" | "SELLER" | "ADMIN"; email?: string; name?: string };
@@ -23,33 +24,28 @@ export default async function SellerPage() {
     return <main className="mx-auto max-w-5xl px-4 py-10">Could not load seller dashboard.</main>;
   }
   const cards = [
-    { label: "Revenue", value: `$${dashboard.data.metrics.revenue.toFixed(2)}`, icon: DollarSign },
-    { label: "Orders", value: dashboard.data.metrics.orders, icon: PackageCheck },
-    { label: "Products", value: dashboard.data.metrics.products, icon: Boxes },
-    { label: "Units sold", value: dashboard.data.metrics.unitsSold, icon: BarChart3 }
+    { label: "Revenue", value: `$${dashboard.data.metrics.revenue.toFixed(2)}`, icon: DollarSign, href: "#products" },
+    { label: "Orders", value: dashboard.data.metrics.orders, icon: PackageCheck, href: "#products" },
+    { label: "Products", value: dashboard.data.metrics.products, icon: Boxes, href: "#products" },
+    { label: "Units sold", value: dashboard.data.metrics.unitsSold, icon: BarChart3, href: "#products" }
   ];
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold">Seller Dashboard</h1>
-      <div className="mt-5 grid gap-4 md:grid-cols-4">
-        {cards.map((card) => <article key={card.label} className="rounded-lg border border-line bg-white p-5"><card.icon className="h-5 w-5 text-brand" /><p className="mt-3 text-sm text-slate-600">{card.label}</p><p className="text-2xl font-bold">{card.value}</p></article>)}
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => (
+          <a key={card.label} href={card.href} className="focus-ring rounded-lg border border-line bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+            <card.icon className="h-5 w-5 text-brand" />
+            <p className="mt-3 text-sm text-slate-600">{card.label}</p>
+            <p className="break-words text-2xl font-bold">{card.value}</p>
+          </a>
+        ))}
       </div>
       <div className="mt-8">
         <SellerProductForm />
       </div>
-      <section className="mt-8 rounded-lg border border-line bg-white">
-        <div className="border-b border-line p-4 font-bold">Products</div>
-        <div className="divide-y divide-line">
-          {dashboard.data.products.map((product) => (
-            <div key={product._id} className="grid grid-cols-3 p-4 text-sm">
-              <span className="font-medium">{product.title}</span>
-              <span>{product.inventory} in stock</span>
-              <span className="text-right font-bold">${product.price.toFixed(2)}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <SellerProductsManager products={dashboard.data.products} />
     </main>
   );
 }

@@ -47,7 +47,7 @@ export async function publicApiFetch<T>(path: string, init: RequestInit = {}): P
       "Content-Type": "application/json",
       ...init.headers
     },
-    next: { revalidate: 60 }
+    cache: init.cache ?? "no-store"
   });
   if (!response.ok) throw new Error(await response.text());
   return response.json() as Promise<T>;

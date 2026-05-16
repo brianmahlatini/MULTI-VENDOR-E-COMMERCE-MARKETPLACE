@@ -22,12 +22,7 @@ declare global {
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = verifySession(readCookie(req.headers.cookie, SESSION_COOKIE));
-    if (!userId) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await getSessionUser(req.headers.cookie);
     if (!user) {
       return res.status(401).json({ message: "Authentication required" });
     }
@@ -56,6 +51,12 @@ export function requireRole(...roles: AuthRole[]) {
     if (!roles.includes(req.marketplaceAuth.role)) return res.status(403).json({ message: "Forbidden" });
     next();
   };
+}
+
+export async function getSessionUser(cookieHeader?: string) {
+  const userId = verifySession(readCookie(cookieHeader, SESSION_COOKIE));
+  if (!userId) return undefined;
+  return prisma.user.findUnique({ where: { id: userId } });
 }
 
 export function createSession(userId: string) {
